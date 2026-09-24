@@ -1,7 +1,7 @@
 'use client';
 // src/app/(auth)/register/page.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -17,6 +17,24 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get('error');
+    if (authError) {
+      if (authError === 'Configuration') {
+        setError('Google Sign-Up is not configured yet. Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set.');
+      } else if (authError === 'AccessDenied') {
+        setError('Google Sign-Up was cancelled or access was denied.');
+      } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
+        setError('Google authentication failed. Please verify your Google OAuth credentials and redirect URI.');
+      } else if (authError === 'OAuthAccountNotLinked') {
+        setError('An account with this email already exists. Please log in with your password.');
+      } else {
+        setError(`Authentication notice: ${authError}`);
+      }
+    }
+  }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));

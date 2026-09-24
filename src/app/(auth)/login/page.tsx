@@ -1,7 +1,7 @@
 'use client';
 // src/app/(auth)/login/page.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -14,6 +14,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get('error');
+    if (authError) {
+      if (authError === 'Configuration') {
+        setError('Google Sign-In is not configured yet. Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set.');
+      } else if (authError === 'AccessDenied') {
+        setError('Google Sign-In was cancelled or access was denied.');
+      } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
+        setError('Google authentication failed. Please verify your Google OAuth credentials and redirect URI.');
+      } else if (authError === 'OAuthAccountNotLinked') {
+        setError('An account with this email already exists. Please log in with your password.');
+      } else {
+        setError(`Authentication notice: ${authError}`);
+      }
+    }
+  }, []);
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);

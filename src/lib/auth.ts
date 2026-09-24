@@ -20,8 +20,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: 'credentials',
@@ -52,6 +53,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error('Account suspended');
         }
 
+        if (!user.passwordHash) {
+          throw new Error('This account was registered using Google. Please click "Sign in with Google".');
+        }
+
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) return null;
 
@@ -68,33 +73,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.status = (user as any).status;
-        token.plan = (user as any).plan;
-        token.planName = (user as any).planName;
-      }
-
-      // Refresh on update trigger
-      if (trigger === 'update') {
+    async signIn({ user }) {
+      if (user?.id) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          include: {
-            subscriptions: {
-              where: { status: 'ACTIVE' },
-              include: { plan: true },
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-            },
-          },
+          where: { id: user.id },
+          select: { status: true },
         });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.status = dbUser.status;
-          token.plan = dbUser.subscriptions[0]?.plan?.slug ?? 'FREE';
-          token.planName = dbUser.subscriptions[0]?.plan?.name ?? 'Free';
+        if (dbUser && (dbUser.status === 'SUSPENDED' || dbUser.status === 'BANNED')) {
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, trigger }) {
+      const targetId = (user?.id || token.id) as string;
+      if (targetId && (user || !token.plan || trigger === 'update')) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: targetId },
+            include: {
+              subscriptions: {
+                where: { status: 'ACTIVE' },
+                include: { plan: true },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+              },
+            },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            token.status = dbUser.status;
+            token.plan = dbUser.subscriptions[0]?.plan?.slug ?? 'FREE';
+            token.planName = dbUser.subscriptions[0]?.plan?.name ?? 'Free';
+          }
+        } catch (e) {
+          console.error('[NextAuth] JWT callback fetch error:', e);
         }
       }
 
@@ -112,15 +126,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
+    async createUser({ user }) {
+      // Auto-provision profile and free subscription for OAuth accounts
+      try {
+        await prisma.profile.upsert({
+          where: { userId: user.id },
+          update: {},
+          create: {
+            userId: user.id,
+            bio: '',
+            skills: '',
+          },
+        });
+
+        const freePlan = await prisma.plan.findUnique({ where: { slug: 'FREE' } });
+        if (freePlan) {
+          const existingSub = await prisma.subscription.findFirst({
+            where: { userId: user.id, status: 'ACTIVE' },
+          });
+          if (!existingSub) {
+            await prisma.subscription.create({
+              data: {
+                userId: user.id,
+                planId: freePlan.id,
+                status: 'ACTIVE',
+                dailyTaskLimit: 5,
+                monthlyTaskLimit: 50,
+                maxActiveTasks: 3,
+                surveyCreateLimit: 0,
+                taskCreateLimit: 0,
+              },
+            });
+          }
+        }
+
+        await prisma.auditLog.create({
+          data: {
+            actorId: user.id,
+            action: 'USER_REGISTERED_GOOGLE',
+            resource: 'user',
+            resourceId: user.id,
+          },
+        });
+      } catch (err) {
+        console.error('[NextAuth] Error in createUser event:', err);
+      }
+    },
     async signIn({ user }) {
-      // Audit log
       await prisma.auditLog.create({
         data: {
           actorId: user.id,
           action: 'USER_LOGIN',
           resource: 'auth',
         },
-      }).catch(() => {}); // Non-blocking
+      }).catch(() => {});
     },
   },
 });
