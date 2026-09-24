@@ -1,0 +1,597 @@
+// Remotask — Complete Prisma Schema
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  CREATOR
+  REVIEWER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  BANNED
+}
+
+enum PlanSlug {
+  FREE
+  STARTER
+  PRO
+  BUSINESS
+  ENTERPRISE
+}
+
+enum BillingPeriod {
+  MONTHLY
+  YEARLY
+  LIFETIME
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum TaskCategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TaskStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  PAUSED
+  COMPLETED
+  EXPIRED
+  REJECTED
+}
+
+enum TaskDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum QuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  DROPDOWN
+  RATING
+  YES_NO
+  NUMBER
+  DATE
+  MATRIX
+  AUDIO
+  IMAGE_LABEL
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum EarningStatus {
+  PENDING
+  AVAILABLE
+  PAID
+  REVERSED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  PAYHERO
+  MOCK
+}
+
+enum NotificationType {
+  TASK_AVAILABLE
+  TASK_SUBMITTED
+  TASK_APPROVED
+  TASK_REJECTED
+  PAYMENT_SUCCESS
+  UPGRADE_SUCCESS
+  PAYOUT_PROCESSED
+  ACCOUNT_STATUS_CHANGE
+  SYSTEM
+}
+
+enum AuditAction {
+  USER_REGISTERED
+  USER_LOGIN
+  USER_LOGOUT
+  USER_PLAN_CHANGED
+  USER_STATUS_CHANGED
+  TASK_CREATED
+  TASK_PUBLISHED
+  TASK_PAUSED
+  TASK_REJECTED
+  SUBMISSION_SUBMITTED
+  SUBMISSION_APPROVED
+  SUBMISSION_REJECTED
+  PAYMENT_INITIATED
+  PAYMENT_CONFIRMED
+  PAYMENT_FAILED
+  PAYOUT_REQUESTED
+  PAYOUT_PROCESSED
+  SURVEY_CREATED
+  SURVEY_PUBLISHED
+  ADMIN_ACTION
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String
+  phone         String?
+  country       String?
+  passwordHash  String
+  role          Role          @default(USER)
+  status        AccountStatus @default(ACTIVE)
+  emailVerified DateTime?
+  referralCode  String?       @unique @default(cuid())
+  referredBy    String?
+  avatar        String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  profile         Profile?
+  subscriptions   Subscription[]
+  tasks           Task[]             @relation("TaskCreator")
+  submissions     TaskSubmission[]
+  earnings        Earning[]
+  payouts         Payout[]
+  payments        Payment[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]         @relation("AuditActor")
+  auditTargets    AuditLog[]         @relation("AuditTarget")
+  surveyResponses SurveyResponse[]
+
+  @@index([email])
+  @@index([status])
+  @@index([role])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  bio         String?
+  skills      String   @default("")
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Plans & Subscriptions ───────────────────────────────────────────────────
+
+model Plan {
+  id            String        @id @default(cuid())
+  slug          PlanSlug      @unique
+  name          String
+  description   String?
+  price         Float
+  currency      String        @default("KES")
+  billingPeriod BillingPeriod @default(MONTHLY)
+  isActive      Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  features         PlanFeature[]
+  categoryAccess   PlanCategoryAccess[]
+  subscriptions    Subscription[]
+  payments         Payment[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model PlanFeature {
+  id       String  @id @default(cuid())
+  planId   String
+  feature  String
+  included Boolean @default(true)
+  limit    Int?
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model PlanCategoryAccess {
+  id         String @id @default(cuid())
+  planId     String
+  categoryId String
+
+  plan     Plan         @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category TaskCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, categoryId])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now())
+  endDate   DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  dailyTaskLimit    Int @default(5)
+  monthlyTaskLimit  Int @default(50)
+  maxActiveTasks    Int @default(3)
+  surveyCreateLimit Int @default(0)
+  taskCreateLimit   Int @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ─── Task Categories ─────────────────────────────────────────────────────────
+
+model TaskCategory {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  name         String
+  description  String?
+  icon         String?
+  color        String?
+  status       TaskCategoryStatus @default(ACTIVE)
+  requiredPlan PlanSlug           @default(FREE)
+  sortOrder    Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tasks      Task[]
+  planAccess PlanCategoryAccess[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+model Task {
+  id               String         @id @default(cuid())
+  title            String
+  slug             String         @unique
+  categoryId       String
+  creatorId        String
+  description      String
+  instructions     String
+  reward           Float
+  currency         String         @default("KES")
+  estimatedMinutes Int
+  difficulty       TaskDifficulty @default(BEGINNER)
+  totalSlots       Int            @default(100)
+  filledSlots      Int            @default(0)
+  requiredPlan     PlanSlug       @default(FREE)
+  status           TaskStatus     @default(DRAFT)
+  startDate        DateTime?
+  endDate          DateTime?
+  eligibilityRules Json?
+  reviewMethod     String         @default("manual")
+  tags             String         @default("")
+  isDemo           Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  publishedAt      DateTime?
+
+  category    TaskCategory     @relation(fields: [categoryId], references: [id])
+  creator     User             @relation("TaskCreator", fields: [creatorId], references: [id])
+  questions   TaskQuestion[]
+  submissions TaskSubmission[]
+  sessions    TaskSession[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([requiredPlan])
+  @@index([slug])
+}
+
+model TaskQuestion {
+  id          String       @id @default(cuid())
+  taskId      String
+  type        QuestionType
+  question    String
+  description String?
+  isRequired  Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  config      Json?
+  createdAt   DateTime     @default(now())
+
+  task    Task                 @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  options TaskQuestionOption[]
+
+  @@index([taskId])
+}
+
+model TaskQuestionOption {
+  id         String @id @default(cuid())
+  questionId String
+  text       String
+  value      String?
+  sortOrder  Int    @default(0)
+
+  question TaskQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model TaskSession {
+  id           String    @id @default(cuid())
+  userId       String
+  taskId       String
+  startedAt    DateTime  @default(now())
+  lastActivity DateTime  @default(now())
+  completedAt  DateTime?
+  isActive     Boolean   @default(true)
+
+  task Task @relation(fields: [taskId], references: [id])
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
+}
+
+model TaskSubmission {
+  id              String           @id @default(cuid())
+  userId          String
+  taskId          String
+  submissionData  Json
+  status          SubmissionStatus @default(SUBMITTED)
+  submittedAt     DateTime         @default(now())
+  reviewedAt      DateTime?
+  reviewerId      String?
+  rejectionReason String?
+  reward          Float?
+  paidAt          DateTime?
+  metadata        Json?
+
+  user User @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id])
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
+  @@index([status])
+}
+
+// ─── Surveys ─────────────────────────────────────────────────────────────────
+
+model Survey {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  creatorId   String
+  taskId      String?
+  isPublished Boolean  @default(false)
+  isDemo      Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+
+  @@index([creatorId])
+}
+
+model SurveyQuestion {
+  id          String       @id @default(cuid())
+  surveyId    String
+  type        QuestionType
+  question    String
+  description String?
+  isRequired  Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  config      Json?
+
+  survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  options SurveyOption[]
+  answers SurveyAnswer[]
+
+  @@index([surveyId])
+}
+
+model SurveyOption {
+  id         String @id @default(cuid())
+  questionId String
+  text       String
+  value      String?
+  sortOrder  Int    @default(0)
+
+  question SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model SurveyResponse {
+  id          String   @id @default(cuid())
+  surveyId    String
+  userId      String
+  completedAt DateTime @default(now())
+  metadata    Json?
+
+  survey  Survey         @relation(fields: [surveyId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
+  answers SurveyAnswer[]
+
+  @@unique([surveyId, userId])
+  @@index([surveyId])
+}
+
+model SurveyAnswer {
+  id         String @id @default(cuid())
+  responseId String
+  questionId String
+  answer     Json
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [questionId], references: [id])
+}
+
+// ─── Earnings & Payouts ───────────────────────────────────────────────────────
+
+model Earning {
+  id          String        @id @default(cuid())
+  userId      String
+  taskId      String?
+  submissionId String?
+  amount      Float
+  currency    String        @default("KES")
+  status      EarningStatus @default(PENDING)
+  description String?
+  createdAt   DateTime      @default(now())
+  availableAt DateTime?
+  paidAt      DateTime?
+  payoutId    String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payout {
+  id            String       @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String       @default("KES")
+  phoneNumber   String
+  provider      String       @default("mpesa")
+  status        PayoutStatus @default(REQUESTED)
+  reference     String?      @unique
+  providerRef   String?
+  requestedAt   DateTime     @default(now())
+  processedAt   DateTime?
+  failureReason String?
+  metadata      Json?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ─── Payments ────────────────────────────────────────────────────────────────
+
+model Payment {
+  id                    String          @id @default(cuid())
+  userId                String
+  planId                String?
+  amount                Float
+  currency              String          @default("KES")
+  phoneNumber           String
+  provider              PaymentProvider @default(PAYHERO)
+  providerTransactionId String?         @unique
+  reference             String          @unique @default(cuid())
+  status                PaymentStatus   @default(PENDING)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  verifiedAt            DateTime?
+  metadata              Json?
+  webhookPayload        Json?
+
+  user User  @relation(fields: [userId], references: [id])
+  plan Plan? @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([reference])
+  @@index([providerTransactionId])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ─── Audit Logs ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?
+  targetId   String?
+  action     AuditAction
+  resource   String?
+  resourceId String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  actor  User? @relation("AuditActor", fields: [actorId], references: [id])
+  target User? @relation("AuditTarget", fields: [targetId], references: [id])
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ─── Site Settings ────────────────────────────────────────────────────────────
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([group])
+}
