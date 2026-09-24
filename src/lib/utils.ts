@@ -1,5 +1,4 @@
 // src/lib/utils.ts
-import { type ClassValue } from 'clsx';
 
 /** Simple class name joiner without clsx dependency */
 export function cn(...classes: (string | undefined | null | false)[]): string {
@@ -135,5 +134,5 @@ export const CATEGORY_ICONS: Record<string, string> = {
   'ai-training':       '🧠',
   'audio-evaluation':  '🎵',
   translation:         '🌐',
-  'website-testing':   '💻',
+  'website-testing':    '💻',
 };
