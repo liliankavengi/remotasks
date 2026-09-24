@@ -86,7 +86,7 @@ export async function POST(
           data: {
             userId: submission.userId,
             type: 'TASK_APPROVED',
-            title: 'Task Approved ✓',
+            title: 'Task Approved',
             message: `Your submission for "${submission.task.title}" was approved! $${reward.toFixed(2)} is now available in your earnings.`,
           },
         });

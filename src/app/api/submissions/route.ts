@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           type: 'TASK_SUBMITTED',
-          title: 'Task Submitted ✓',
+          title: 'Task Submitted',
           message: `Your submission for "${task.title}" is under review. You'll earn KES ${task.reward} upon approval.`,
         },
       });

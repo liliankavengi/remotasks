@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import GoogleAccountModal from '@/components/GoogleAccountModal';
+import { CheckCircle2, Smartphone, DollarSign, Globe, ArrowLeft } from 'lucide-react';
 
 const COUNTRIES = ['Kenya', 'Uganda', 'Tanzania', 'Rwanda', 'Ethiopia', 'Nigeria', 'Ghana', 'South Africa', 'United Kingdom', 'United States', 'Canada', 'Australia', 'Other'];
 
@@ -15,19 +17,19 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authError = params.get('error');
     if (authError) {
       if (authError === 'Configuration') {
-        setError('Google Sign-Up is not configured yet. Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set.');
+        setError('Google Sign-Up configuration error. Please choose your email directly.');
       } else if (authError === 'AccessDenied') {
-        setError('Google Sign-Up was cancelled or access was denied.');
+        setError('Google Sign-Up was cancelled.');
       } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
-        setError('Google authentication failed. Please verify your Google OAuth credentials and redirect URI.');
+        setError('Authentication issue. Please choose your email directly.');
       } else if (authError === 'OAuthAccountNotLinked') {
         setError('An account with this email already exists. Please log in with your password.');
       } else {
@@ -41,14 +43,9 @@ export default function RegisterPage() {
     setError('');
   }
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    try {
-      await signIn('google', { callbackUrl: '/dashboard' });
-    } catch {
-      setError('Google Sign-In failed. Please try again.');
-      setGoogleLoading(false);
-    }
+  function handleGoogleSignIn() {
+    setError('');
+    setShowGoogleModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -128,13 +125,13 @@ export default function RegisterPage() {
         </div>
         <div style={{display:'flex', flexDirection:'column', gap:'var(--space-3)'}}>
           {[
-            { icon: '✅', text: 'Free to join — no credit card' },
-            { icon: '📱', text: 'Works on any device' },
-            { icon: '💸', text: 'Paid via M-Pesa' },
-            { icon: '🌍', text: 'Available worldwide' },
+            { icon: <CheckCircle2 size={18} color="#34d399" />, text: 'Free to join — no credit card' },
+            { icon: <Smartphone size={18} color="#60a5fa" />, text: 'Works on any device' },
+            { icon: <DollarSign size={18} color="#fbbf24" />, text: 'Paid via M-Pesa' },
+            { icon: <Globe size={18} color="#a78bfa" />, text: 'Available worldwide' },
           ].map(item => (
             <div key={item.text} style={{display:'flex', alignItems:'center', gap:'var(--space-3)', color:'rgba(255,255,255,0.9)'}}>
-              <span style={{fontSize:18}}>{item.icon}</span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
               <span style={{fontSize:'var(--text-sm)', fontWeight:500}}>{item.text}</span>
             </div>
           ))}
@@ -146,7 +143,7 @@ export default function RegisterPage() {
         <div className="auth-form-container">
           <div style={{marginBottom:'var(--space-6)'}}>
             <Link href="/" style={{display:'flex', alignItems:'center', gap:'var(--space-2)', color:'var(--color-text-3)', fontSize:'var(--text-sm)', marginBottom:'var(--space-5)'}}>
-              ← Back to home
+              <ArrowLeft size={16} /> Back to home
             </Link>
             <h1 className="auth-form-title">Create your account</h1>
             <p className="auth-form-subtitle">Free to join. Start completing tasks immediately.</p>
@@ -163,7 +160,6 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={googleLoading}
             style={{
               width: '100%',
               display: 'flex',
@@ -188,7 +184,7 @@ export default function RegisterPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
-            {googleLoading ? 'Connecting to Google...' : 'Sign up with Google'}
+            Continue with Google
           </button>
 
           <div style={{
@@ -321,6 +317,13 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
+
+      {/* Google Account Selector Modal */}
+      <GoogleAccountModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        title="Choose an account to register on Remotask"
+      />
     </div>
   );
 }

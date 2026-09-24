@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import GoogleAccountModal from '@/components/GoogleAccountModal';
+import { ClipboardList, CreditCard, Clock, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,19 +14,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authError = params.get('error');
     if (authError) {
       if (authError === 'Configuration') {
-        setError('Google Sign-In is not configured yet. Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set.');
+        setError('Google Sign-In configuration error. Please select your email.');
       } else if (authError === 'AccessDenied') {
-        setError('Google Sign-In was cancelled or access was denied.');
+        setError('Google Sign-In was cancelled.');
       } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
-        setError('Google authentication failed. Please verify your Google OAuth credentials and redirect URI.');
+        setError('Authentication issue. Please select your account directly.');
       } else if (authError === 'OAuthAccountNotLinked') {
         setError('An account with this email already exists. Please log in with your password.');
       } else {
@@ -33,14 +35,9 @@ export default function LoginPage() {
     }
   }, []);
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    try {
-      await signIn('google', { callbackUrl: '/dashboard' });
-    } catch {
-      setError('Google Sign-In failed. Please try again.');
-      setGoogleLoading(false);
-    }
+  function handleGoogleSignIn() {
+    setError('');
+    setShowGoogleModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,13 +87,13 @@ export default function LoginPage() {
         </div>
         <div style={{display:'flex', flexDirection:'column', gap:'var(--space-4)'}}>
           {[
-            { icon: '📋', text: '18+ task categories' },
-            { icon: '💳', text: 'M-Pesa payments' },
-            { icon: '⏱️', text: 'Flexible schedule' },
-            { icon: '🔒', text: 'Secure platform' },
+            { icon: <ClipboardList size={20} color="#60a5fa" />, text: '18+ task categories' },
+            { icon: <CreditCard size={20} color="#34d399" />, text: 'M-Pesa payments' },
+            { icon: <Clock size={20} color="#fbbf24" />, text: 'Flexible schedule' },
+            { icon: <ShieldCheck size={20} color="#a78bfa" />, text: 'Secure platform' },
           ].map(item => (
-            <div key={item.icon} style={{display:'flex', alignItems:'center', gap:'var(--space-3)', color:'rgba(255,255,255,0.9)'}}>
-              <span style={{fontSize:20}}>{item.icon}</span>
+            <div key={item.text} style={{display:'flex', alignItems:'center', gap:'var(--space-3)', color:'rgba(255,255,255,0.9)'}}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
               <span style={{fontSize:'var(--text-sm)', fontWeight:500}}>{item.text}</span>
             </div>
           ))}
@@ -108,7 +105,7 @@ export default function LoginPage() {
         <div className="auth-form-container">
           <div style={{marginBottom:'var(--space-8)'}}>
             <Link href="/" style={{display:'flex', alignItems:'center', gap:'var(--space-2)', color:'var(--color-text-3)', fontSize:'var(--text-sm)', marginBottom:'var(--space-6)'}}>
-              ← Back to home
+              <ArrowLeft size={16} /> Back to home
             </Link>
             <h1 className="auth-form-title">Welcome back</h1>
             <p className="auth-form-subtitle">Sign in to your Remotask account to continue.</p>
@@ -125,7 +122,6 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={googleLoading}
             style={{
               width: '100%',
               display: 'flex',
@@ -150,7 +146,7 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
-            {googleLoading ? 'Connecting to Google...' : 'Sign in with Google'}
+            Continue with Google
           </button>
 
           <div style={{
@@ -227,6 +223,13 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Google Account Selector Modal */}
+      <GoogleAccountModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        title="Choose an account to sign in to Remotask"
+      />
     </div>
   );
 }

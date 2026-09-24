@@ -1,19 +1,30 @@
 // src/app/page.tsx — Landing Page
 import Link from 'next/link';
+import CategoryIcon from '@/components/CategoryIcon';
+import {
+  Globe,
+  Layers,
+  CheckSquare,
+  Smartphone,
+  CreditCard,
+  ShieldCheck,
+  Check,
+  ArrowRight,
+} from 'lucide-react';
 
 const CATEGORIES = [
-  { icon: '📋', name: 'Surveys',          plan: 'Free',    count: 0, slug: 'surveys',             color: '#F0FDF4' },
-  { icon: '⚡', name: 'Prompt Engineering', plan: 'Pro',   count: 0, slug: 'prompt-engineering',  color: '#F5F3FF' },
-  { icon: '🤖', name: 'AI Evaluation',    plan: 'Pro',     count: 0, slug: 'ai-evaluation',       color: '#EEF2FF' },
-  { icon: '🏷️', name: 'Data Annotation',  plan: 'Starter', count: 0, slug: 'data-annotation',     color: '#FFFBEB' },
-  { icon: '🖼️', name: 'Image Classification', plan: 'Free', count: 0, slug: 'image-classification', color: '#FDF2F8' },
-  { icon: '📝', name: 'Text Classification', plan: 'Free', count: 0, slug: 'text-classification', color: '#ECFEFF' },
-  { icon: '🔍', name: 'Web Research',     plan: 'Free',    count: 0, slug: 'web-research',        color: '#EFF6FF' },
-  { icon: '🎙️', name: 'Transcription',   plan: 'Starter', count: 0, slug: 'transcription',       color: '#F0FDFA' },
-  { icon: '✍️', name: 'Content Writing',  plan: 'Pro',    count: 0, slug: 'content-writing',     color: '#EEF2FF' },
-  { icon: '🌐', name: 'Translation',      plan: 'Starter', count: 0, slug: 'translation',         color: '#E0F2FE' },
-  { icon: '💻', name: 'Website Testing',  plan: 'Pro',     count: 0, slug: 'website-testing',     color: '#FFF7ED' },
-  { icon: '🧠', name: 'AI Training',      plan: 'Pro',     count: 0, slug: 'ai-training',         color: '#F5F3FF' },
+  { name: 'Surveys',              plan: 'Free',    count: 0, slug: 'surveys',             color: '#F0FDF4' },
+  { name: 'Prompt Engineering',   plan: 'Pro',     count: 0, slug: 'prompt-engineering',  color: '#F5F3FF' },
+  { name: 'AI Evaluation',        plan: 'Pro',     count: 0, slug: 'ai-evaluation',       color: '#EEF2FF' },
+  { name: 'Data Annotation',      plan: 'Starter', count: 0, slug: 'data-annotation',     color: '#FFFBEB' },
+  { name: 'Image Classification', plan: 'Free',    count: 0, slug: 'image-classification', color: '#FDF2F8' },
+  { name: 'Text Classification',  plan: 'Free',    count: 0, slug: 'text-classification', color: '#ECFEFF' },
+  { name: 'Web Research',         plan: 'Free',    count: 0, slug: 'web-research',        color: '#EFF6FF' },
+  { name: 'Transcription',        plan: 'Starter', count: 0, slug: 'transcription',       color: '#F0FDFA' },
+  { name: 'Content Writing',      plan: 'Pro',     count: 0, slug: 'content-writing',     color: '#EEF2FF' },
+  { name: 'Translation',          plan: 'Starter', count: 0, slug: 'translation',         color: '#E0F2FE' },
+  { name: 'Website Testing',      plan: 'Pro',     count: 0, slug: 'website-testing',     color: '#FFF7ED' },
+  { name: 'AI Training',          plan: 'Pro',     count: 0, slug: 'ai-training',         color: '#F5F3FF' },
 ];
 
 const STEPS = [
@@ -24,12 +35,12 @@ const STEPS = [
 ];
 
 const WHY_ITEMS = [
-  { icon: '🌍', title: 'Work From Anywhere',      desc: 'Complete tasks from your phone or computer. No commute required.' },
-  { icon: '📂', title: 'Multiple Task Categories', desc: '18+ task types across AI, surveys, research, writing, and more.' },
-  { icon: '📋', title: 'Clear Requirements',       desc: 'Every task has transparent instructions, time estimates, and rewards.' },
-  { icon: '📱', title: 'Mobile-Friendly',           desc: 'Optimized for Android and iPhone. Complete tasks anywhere.' },
-  { icon: '💳', title: 'M-Pesa Payments',          desc: 'Get paid directly to your M-Pesa account. Fast and reliable.' },
-  { icon: '🔒', title: 'Secure Platform',          desc: 'Your data and earnings are protected with industry-standard security.' },
+  { icon: <Globe size={28} color="#2563eb" />, title: 'Work From Anywhere',      desc: 'Complete tasks from your phone or computer. No commute required.' },
+  { icon: <Layers size={28} color="#7c3aed" />, title: 'Multiple Task Categories', desc: '18+ task types across AI, surveys, research, writing, and more.' },
+  { icon: <CheckSquare size={28} color="#059669" />, title: 'Clear Requirements', desc: 'Every task has transparent instructions, time estimates, and rewards.' },
+  { icon: <Smartphone size={28} color="#ea580c" />, title: 'Mobile-Friendly',     desc: 'Optimized for Android and iPhone. Complete tasks anywhere.' },
+  { icon: <CreditCard size={28} color="#0284c7" />, title: 'M-Pesa Payments',    desc: 'Get paid directly to your M-Pesa account. Fast and reliable.' },
+  { icon: <ShieldCheck size={28} color="#16a34a" />, title: 'Secure Platform',    desc: 'Your data and earnings are protected with industry-standard security.' },
 ];
 
 const FAQS = [
@@ -82,8 +93,9 @@ export default function LandingPage() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             Find Tasks
           </Link>
-          <Link href="/register" className="btn btn-secondary btn-xl">
-            Create an Account →
+          <Link href="/register" className="btn btn-secondary btn-xl" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <span>Create an Account</span>
+            <ArrowRight size={18} />
           </Link>
         </div>
         <div className="hero-stats">
@@ -120,8 +132,8 @@ export default function LandingPage() {
           <div className="categories-grid">
             {CATEGORIES.map(cat => (
               <Link key={cat.slug} href={`/tasks?category=${cat.slug}`} className="category-card">
-                <div className="category-icon" style={{background: cat.color}}>
-                  {cat.icon}
+                <div className="category-icon" style={{background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <CategoryIcon slug={cat.slug} size={20} />
                 </div>
                 <div>
                   <div className="category-name">{cat.name}</div>
@@ -169,7 +181,7 @@ export default function LandingPage() {
           <div className="three-col">
             {WHY_ITEMS.map(item => (
               <div key={item.title} className="card" style={{padding:'var(--space-6)'}}>
-                <div style={{fontSize:32, marginBottom:'var(--space-4)'}}>{item.icon}</div>
+                <div style={{marginBottom:'var(--space-4)', display:'flex', alignItems:'center'}}>{item.icon}</div>
                 <h4 style={{marginBottom:'var(--space-2)'}}>{item.title}</h4>
                 <p style={{fontSize:'var(--text-sm)', color:'var(--color-text-3)', lineHeight:'var(--leading-relaxed)'}}>{item.desc}</p>
               </div>
@@ -204,7 +216,9 @@ export default function LandingPage() {
                 <div className="plan-features">
                   {plan.features.map(f => (
                     <div key={f} className="plan-feature-item">
-                      <span className="plan-feature-check">✓</span>
+                      <span className="plan-feature-check" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Check size={12} />
+                      </span>
                       {f}
                     </div>
                   ))}

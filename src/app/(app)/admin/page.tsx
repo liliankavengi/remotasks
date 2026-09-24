@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Search,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 
 interface Stats {
@@ -330,9 +331,10 @@ export default function AdminDashboardPage() {
               <h3 className="font-bold text-white text-base">Moderate Submission</h3>
               <button
                 onClick={() => setReviewingSub(null)}
-                className="text-muted hover:text-white text-sm"
+                className="text-muted hover:text-white text-sm p-1 rounded transition-colors"
+                aria-label="Close"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 

@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
               data: {
                 userId: user.id,
                 type: 'UPGRADE_SUCCESS',
-                title: 'Plan Upgraded Successfully! 🎉',
+                title: 'Plan Upgraded Successfully!',
                 message: `Your account is now upgraded to ${plan.name}. High-paying tasks unlocked!`,
               },
             });

@@ -5,6 +5,19 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { formatCurrency, formatRelativeTime, SUBMISSION_STATUS_LABELS, DIFFICULTY_LABELS } from '@/lib/utils';
+import {
+  ClipboardList,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  CreditCard,
+  Search,
+  ArrowUpRight,
+  PenTool,
+  Coins,
+  Wallet,
+  ArrowRight,
+} from 'lucide-react';
 
 interface DashboardData {
   stats: {
@@ -36,11 +49,11 @@ interface DashboardData {
   }>;
 }
 
-function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string; sub?: string; color: string }) {
+function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub?: string; color: string }) {
   return (
     <div className="stat-card">
-      <div className="stat-card-icon" style={{ background: color }}>
-        <span style={{ fontSize: 20 }}>{icon}</span>
+      <div className="stat-card-icon" style={{ background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon}
       </div>
       <div className="stat-card-label">{label}</div>
       <div className="stat-card-value">{value}</div>
@@ -94,17 +107,17 @@ export default function DashboardPage() {
       {/* Page header */}
       <div className="page-header">
         <div>
-          <div className="page-title">{greeting}, {firstName} 👋</div>
+          <div className="page-title">{greeting}, {firstName}</div>
           <div className="page-desc">Here's what's happening with your Remotask account.</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <Link href="/tasks" className="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <Link href="/tasks" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Search size={16} />
             Find Tasks
           </Link>
           {planSlug === 'FREE' && (
-            <Link href="/upgrade" className="btn btn-outline-primary">
-              ⬆ Upgrade Plan
+            <Link href="/upgrade" className="btn btn-outline-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ArrowUpRight size={16} /> Upgrade Plan
             </Link>
           )}
         </div>
@@ -124,7 +137,9 @@ export default function DashboardPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
               <strong>You&apos;re on the Free plan.</strong> Upgrade to unlock more task categories, higher daily limits, and better earnings.{' '}
-              <Link href="/upgrade" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline' }}>Upgrade now →</Link>
+              <Link href="/upgrade" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                Upgrade now <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         )}
@@ -132,17 +147,17 @@ export default function DashboardPage() {
         {/* Stats Grid */}
         {loading ? <SkeletonStats /> : (
           <div className="stats-grid" style={{ marginBottom: 'var(--space-8)' }}>
-            <StatCard icon="📋" label="Available Tasks" value={data?.stats.availableTasks.toString() || '0'} color="#F0FDF4" />
-            <StatCard icon="✅" label="Completed Tasks" value={data?.stats.completedTasks.toString() || '0'} color="#EFF6FF" />
-            <StatCard icon="⏳" label="Pending Review" value={data?.stats.pendingTasks.toString() || '0'} color="#FFFBEB" />
+            <StatCard icon={<ClipboardList size={22} color="#16a34a" />} label="Available Tasks" value={data?.stats.availableTasks.toString() || '0'} color="#F0FDF4" />
+            <StatCard icon={<CheckCircle2 size={22} color="#2563eb" />} label="Completed Tasks" value={data?.stats.completedTasks.toString() || '0'} color="#EFF6FF" />
+            <StatCard icon={<Clock size={22} color="#d97706" />} label="Pending Review" value={data?.stats.pendingTasks.toString() || '0'} color="#FFFBEB" />
             <StatCard
-              icon="💰"
+              icon={<DollarSign size={22} color="#059669" />}
               label="Total Earnings"
               value={formatCurrency(data?.stats.totalEarnings || 0)}
               sub={data?.stats.pendingEarnings ? `KES ${data.stats.pendingEarnings} pending` : undefined}
               color="#F0FDF4"
             />
-            <StatCard icon="💳" label="Available Balance" value={formatCurrency(data?.stats.availableBalance || 0)} color="#EDE9FE" />
+            <StatCard icon={<CreditCard size={22} color="#7c3aed" />} label="Available Balance" value={formatCurrency(data?.stats.availableBalance || 0)} color="#EDE9FE" />
           </div>
         )}
 
@@ -204,8 +219,8 @@ export default function DashboardPage() {
                 )}
               </div>
               {planSlug !== 'ENTERPRISE' && (
-                <Link href="/upgrade" className="btn btn-primary btn-sm btn-full">
-                  ⬆ Upgrade Plan
+                <Link href="/upgrade" className="btn btn-primary btn-sm btn-full" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <ArrowUpRight size={16} /> Upgrade Plan
                 </Link>
               )}
             </div>
@@ -219,11 +234,11 @@ export default function DashboardPage() {
           </div>
           <div className="card-body">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-              <Link href="/tasks" className="btn btn-primary">🔍 Find Tasks</Link>
-              <Link href="/upgrade" className="btn btn-secondary">⬆ Upgrade Plan</Link>
-              <Link href="/surveys/create" className="btn btn-secondary">✏️ Create Survey</Link>
-              <Link href="/earnings" className="btn btn-secondary">💰 View Earnings</Link>
-              <Link href="/payouts" className="btn btn-secondary">💳 Request Payout</Link>
+              <Link href="/tasks" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><Search size={16} /> Find Tasks</Link>
+              <Link href="/upgrade" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><ArrowUpRight size={16} /> Upgrade Plan</Link>
+              <Link href="/surveys/create" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><PenTool size={16} /> Create Survey</Link>
+              <Link href="/earnings" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><Coins size={16} /> View Earnings</Link>
+              <Link href="/payouts" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><Wallet size={16} /> Request Payout</Link>
             </div>
           </div>
         </div>
@@ -232,7 +247,9 @@ export default function DashboardPage() {
         <div className="card" style={{ marginTop: 'var(--space-6)' }}>
           <div className="card-header">
             <h3 className="card-title">Recent Submissions</h3>
-            <Link href="/task-history" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)', fontWeight: 600 }}>View all →</Link>
+            <Link href="/task-history" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              View all <ArrowRight size={14} />
+            </Link>
           </div>
 
           {loading ? (

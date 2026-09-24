@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: payment.userId,
             type: 'PAYMENT_SUCCESS',
-            title: 'Payment Successful 🎉',
+            title: 'Payment Successful',
             message: `Your payment of KES ${amount} was confirmed. ${payment.plan ? `Your ${payment.plan.name} plan is now active!` : ''}`,
           },
         });

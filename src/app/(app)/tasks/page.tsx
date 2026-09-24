@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { formatCurrency, DIFFICULTY_LABELS, PLAN_DISPLAY } from '@/lib/utils';
 import { canAccessTask } from '@/lib/permissions';
+import CategoryIcon from '@/components/CategoryIcon';
+import { Lock, ArrowRight } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -49,8 +51,9 @@ function TaskCard({ task, userPlan }: { task: Task; userPlan: string }) {
       )}
 
       <div className="task-card-header">
-        <span className="category-chip">
-          {task.category.icon || '📋'} {task.category.name}
+        <span className="category-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <CategoryIcon slug={task.category.slug} size={14} />
+          {task.category.name}
         </span>
         <span className={`badge ${difficulty.badge}`}>{difficulty.label}</span>
       </div>
@@ -84,7 +87,7 @@ function TaskCard({ task, userPlan }: { task: Task; userPlan: string }) {
         {isLocked ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
-              🔒 Requires {planDisplay?.label || task.requiredPlan}
+              <Lock size={12} /> Requires {planDisplay?.label || task.requiredPlan}
             </div>
             <Link href="/upgrade" className="btn btn-outline-primary btn-sm">Upgrade</Link>
           </>
@@ -97,8 +100,8 @@ function TaskCard({ task, userPlan }: { task: Task; userPlan: string }) {
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
               {slotsLeft} slot{slotsLeft !== 1 ? 's' : ''} left
             </div>
-            <Link href={`/tasks/${task.id}/work`} className="btn btn-primary btn-sm">
-              Start Task →
+            <Link href={`/tasks/${task.id}/work`} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              Start Task <ArrowRight size={14} />
             </Link>
           </>
         )}
@@ -267,7 +270,7 @@ export default function TasksPage() {
         {userPlan === 'FREE' && (
           <div className="alert alert-info" style={{ marginBottom: 'var(--space-5)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span>Some tasks require a paid plan. <Link href="/upgrade" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline' }}>Upgrade to unlock them →</Link></span>
+            <span>Some tasks require a paid plan. <Link href="/upgrade" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Upgrade to unlock them <ArrowRight size={14} /></Link></span>
           </div>
         )}
 
