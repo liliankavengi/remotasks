@@ -24,12 +24,10 @@ export default function RegisterPage() {
     const params = new URLSearchParams(window.location.search);
     const authError = params.get('error');
     if (authError) {
-      if (authError === 'Configuration') {
-        setError('Google Sign-Up configuration error. Please choose your email directly.');
+      if (authError === 'Configuration' || authError === 'OAuthCallback' || authError === 'OAuthSignin') {
+        window.history.replaceState({}, '', window.location.pathname);
       } else if (authError === 'AccessDenied') {
-        setError('Google Sign-Up was cancelled.');
-      } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
-        setError('Authentication issue. Please choose your email directly.');
+        setError('Sign-Up was cancelled.');
       } else if (authError === 'OAuthAccountNotLinked') {
         setError('An account with this email already exists. Please log in with your password.');
       } else {

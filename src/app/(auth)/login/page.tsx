@@ -21,12 +21,10 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const authError = params.get('error');
     if (authError) {
-      if (authError === 'Configuration') {
-        setError('Google Sign-In configuration error. Please select your email.');
+      if (authError === 'Configuration' || authError === 'OAuthCallback' || authError === 'OAuthSignin') {
+        window.history.replaceState({}, '', window.location.pathname);
       } else if (authError === 'AccessDenied') {
-        setError('Google Sign-In was cancelled.');
-      } else if (authError === 'OAuthCallback' || authError === 'OAuthSignin') {
-        setError('Authentication issue. Please select your account directly.');
+        setError('Sign-In was cancelled.');
       } else if (authError === 'OAuthAccountNotLinked') {
         setError('An account with this email already exists. Please log in with your password.');
       } else {

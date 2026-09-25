@@ -1,10 +1,10 @@
 'use client';
 // src/components/GoogleAccountModal.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { X, AlertCircle, Plus, ChevronRight } from 'lucide-react';
+import { X, AlertCircle, Plus, ChevronRight, User, Trash2 } from 'lucide-react';
 
 interface GoogleAccountModalProps {
   isOpen: boolean;
@@ -12,31 +12,129 @@ interface GoogleAccountModalProps {
   title?: string;
 }
 
+interface SavedGoogleAccount {
+  email: string;
+  name: string;
+  avatarColor: string;
+  initials: string;
+  lastUsed: number;
+}
+
+const STORAGE_KEY = 'remotask_saved_google_accounts';
+
 export default function GoogleAccountModal({
   isOpen,
   onClose,
-  title = 'Choose an account to continue to Remotask',
+  title = 'Choose your account to continue to Remotask',
 }: GoogleAccountModalProps) {
   const router = useRouter();
   const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
+  const [savedAccounts, setSavedAccounts] = useState<SavedGoogleAccount[]>([]);
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customEmail, setCustomEmail] = useState('');
-  const [customName, setCustomName] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
   const [error, setError] = useState('');
+
+  // Load user's own saved accounts from localStorage (no hardcoded accounts!)
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed: SavedGoogleAccount[] = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSavedAccounts(parsed);
+          setShowCustomInput(false);
+          return;
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+    // If no accounts saved yet on this machine, show input form directly
+    setSavedAccounts([]);
+    setShowCustomInput(true);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  async function handleSelectAccount(email: string, name?: string) {
-    if (!email || !email.includes('@')) {
-      setError('Please provide a valid email address.');
+  function getInitials(name: string, email: string): string {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return email.slice(0, 2).toUpperCase();
+  }
+
+  function getAvatarColor(email: string): string {
+    const colors = [
+      'linear-gradient(135deg, #4285F4 0%, #34A853 100%)',
+      'linear-gradient(135deg, #FBBC05 0%, #EA4335 100%)',
+      'linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)',
+      'linear-gradient(135deg, #10B981 0%, #06B6D4 100%)',
+      'linear-gradient(135deg, #F97316 0%, #EF4444 100%)',
+    ];
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) {
+      hash = email.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  }
+
+  function saveAccount(email: string, name?: string) {
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      const derivedName = name?.trim() ||
+        cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      
+      const newAccount: SavedGoogleAccount = {
+        email: cleanEmail,
+        name: derivedName,
+        avatarColor: getAvatarColor(cleanEmail),
+        initials: getInitials(derivedName, cleanEmail),
+        lastUsed: Date.now(),
+      };
+
+      const existing = savedAccounts.filter((a) => a.email !== cleanEmail);
+      const updated = [newAccount, ...existing].slice(0, 5);
+      setSavedAccounts(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  function removeSavedAccount(e: React.MouseEvent, emailToRemove: string) {
+    e.stopPropagation();
+    try {
+      const updated = savedAccounts.filter((a) => a.email !== emailToRemove);
+      setSavedAccounts(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      if (updated.length === 0) {
+        setShowCustomInput(true);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  async function handleAuthenticate(email: string, name?: string) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setError('Please provide a valid Google email address.');
       return;
     }
+
     setError('');
-    setLoadingEmail(email);
+    setLoadingEmail(cleanEmail);
 
     try {
       const result = await signIn('credentials', {
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         name: name?.trim() || undefined,
         isGoogleAuth: 'true',
         redirect: false,
@@ -50,39 +148,25 @@ export default function GoogleAccountModal({
         }
         setLoadingEmail(null);
       } else {
+        saveAccount(cleanEmail, name);
         onClose();
         router.push('/dashboard');
         router.refresh();
       }
     } catch {
-      setError('Connection failed. Please try again.');
+      setError('Connection failed. Please check your internet connection.');
       setLoadingEmail(null);
     }
   }
 
-  function handleCustomSubmit(e: React.FormEvent) {
+  function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!customEmail) {
-      setError('Please enter your email.');
+    if (!emailInput.trim()) {
+      setError('Please enter your Google email address.');
       return;
     }
-    handleSelectAccount(customEmail, customName);
+    handleAuthenticate(emailInput, nameInput);
   }
-
-  const presetAccounts = [
-    {
-      name: 'Lilian Kavengi',
-      email: 'kavengililian14@gmail.com',
-      avatarColor: 'linear-gradient(135deg, #4285F4 0%, #34A853 100%)',
-      initials: 'LK',
-    },
-    {
-      name: 'Remotask Contributor',
-      email: 'worker@remotask.co.ke',
-      avatarColor: 'linear-gradient(135deg, #FBBC05 0%, #EA4335 100%)',
-      initials: 'RC',
-    },
-  ];
 
   return (
     <div
@@ -117,7 +201,7 @@ export default function GoogleAccountModal({
       >
         {/* Header */}
         <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24">
                 <path
@@ -137,7 +221,7 @@ export default function GoogleAccountModal({
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"
                 />
               </svg>
-              <span style={{ fontSize: '15px', fontWeight: 600, color: '#f3f4f6' }}>Sign in with Google</span>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#f3f4f6' }}>Google Sign-In</span>
             </div>
             <button
               type="button"
@@ -150,15 +234,16 @@ export default function GoogleAccountModal({
                 cursor: 'pointer',
                 padding: '4px',
                 borderRadius: '6px',
-                fontSize: '18px',
-                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <X size={18} />
             </button>
           </div>
           <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 6px 0', color: '#ffffff' }}>
-            Choose an account
+            {showCustomInput ? 'Choose your Google Account' : 'Choose an account'}
           </h2>
           <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
             {title}
@@ -187,19 +272,17 @@ export default function GoogleAccountModal({
         )}
 
         {/* Body */}
-        <div style={{ padding: '16px 24px 20px' }}>
-          {!showCustomInput ? (
+        <div style={{ padding: '20px 24px 24px' }}>
+          {/* View 1: User's previously used accounts on this device (if any) */}
+          {!showCustomInput && savedAccounts.length > 0 ? (
             <div>
-              {/* Account list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                {presetAccounts.map((acc) => {
+                {savedAccounts.map((acc) => {
                   const isLoading = loadingEmail === acc.email;
                   return (
-                    <button
+                    <div
                       key={acc.email}
-                      type="button"
-                      disabled={!!loadingEmail}
-                      onClick={() => handleSelectAccount(acc.email, acc.name)}
+                      onClick={() => handleAuthenticate(acc.email, acc.name)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -263,17 +346,41 @@ export default function GoogleAccountModal({
                           }}
                         />
                       ) : (
-                        <ChevronRight size={18} style={{ color: '#6b7280' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            title="Remove from saved accounts"
+                            onClick={(e) => removeSavedAccount(e, acc.email)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              borderRadius: '4px',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#6b7280'; }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          <ChevronRight size={18} style={{ color: '#6b7280' }} />
+                        </div>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
 
-                {/* Use another account option */}
+                {/* Option to enter a different account */}
                 <button
                   type="button"
                   disabled={!!loadingEmail}
-                  onClick={() => setShowCustomInput(true)}
+                  onClick={() => {
+                    setError('');
+                    setEmailInput('');
+                    setNameInput('');
+                    setShowCustomInput(true);
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -311,93 +418,108 @@ export default function GoogleAccountModal({
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '14px', color: '#60a5fa' }}>
-                      Use another Google account
+                      Use another account
                     </div>
                     <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-                      Enter any email address to sign in instantly
+                      Sign in with any email address
                     </div>
                   </div>
                 </button>
               </div>
             </div>
           ) : (
-            <form onSubmit={handleCustomSubmit}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
-                  Google Email Address
+            /* View 2: Direct Account Entry Form — user enters their own account */
+            <form onSubmit={handleFormSubmit}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e5e7eb', marginBottom: '8px' }}>
+                  Google Email Address <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="e.g. yourname@gmail.com"
-                  value={customEmail}
-                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="e.g. name@gmail.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
                   disabled={!!loadingEmail}
                   autoFocus
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
                     borderRadius: '8px',
                     color: '#ffffff',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
                   }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.18)'; }}
                 />
+                <span style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', display: 'block' }}>
+                  Enter any Google email address you want to use.
+                </span>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
-                  Full Name (Optional)
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#e5e7eb', marginBottom: '8px' }}>
+                  Your Full Name <span style={{ color: '#9ca3af', fontWeight: 400 }}>(Optional)</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. John Doe"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. Lilian Kavengi"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
                   disabled={!!loadingEmail}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
                     borderRadius: '8px',
                     color: '#ffffff',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.2s',
                   }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.18)'; }}
                 />
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowCustomInput(false)}
-                  disabled={!!loadingEmail}
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#e5e7eb',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Back
-                </button>
+                {savedAccounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      setShowCustomInput(false);
+                    }}
+                    disabled={!!loadingEmail}
+                    style={{
+                      flex: 1,
+                      padding: '12px 14px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#e5e7eb',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Back
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={!!loadingEmail}
                   style={{
-                    flex: 2,
-                    padding: '10px 14px',
-                    backgroundColor: '#2563eb',
+                    flex: savedAccounts.length > 0 ? 2 : 1,
+                    padding: '12px 14px',
+                    backgroundColor: '#1a73e8',
                     border: 'none',
                     borderRadius: '8px',
                     color: '#ffffff',
@@ -408,6 +530,7 @@ export default function GoogleAccountModal({
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                   }}
                 >
                   {loadingEmail ? (
@@ -432,14 +555,14 @@ export default function GoogleAccountModal({
             </form>
           )}
 
-          {/* Footer notice */}
+          {/* Google privacy & sharing notice */}
           <div
             style={{
-              marginTop: '16px',
+              marginTop: '18px',
               paddingTop: '14px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               fontSize: '11px',
-              color: '#6b7280',
+              color: '#9ca3af',
               lineHeight: 1.5,
               textAlign: 'center',
             }}
