@@ -22,11 +22,14 @@ import {
 
 interface Question {
   id: string;
-  questionText: string;
-  questionType: 'MULTIPLE_CHOICE' | 'TEXT' | 'RATING' | 'FILE_UPLOAD' | 'BOOLEAN';
-  options: string[] | null;
+  questionText?: string;
+  question?: string;
+  questionType?: string;
+  type?: string;
+  options?: any[] | null;
   isRequired: boolean;
-  stepOrder: number;
+  stepOrder?: number;
+  sortOrder?: number;
 }
 
 interface TaskDetail {
@@ -131,8 +134,9 @@ export default function TaskWorkPage() {
     // Validate required questions
     if (task.questions && task.questions.length > 0) {
       for (const q of task.questions) {
+        const qTitle = q.questionText || q.question || 'this question';
         if (q.isRequired && (!answers[q.id] || answers[q.id].toString().trim() === '')) {
-          alert(`Please answer the required question: "${q.questionText}"`);
+          alert(`Please answer the required question: "${qTitle}"`);
           return;
         }
       }
@@ -339,93 +343,101 @@ export default function TaskWorkPage() {
               {/* Render Structured Questions if available */}
               {task.questions && task.questions.length > 0 ? (
                 <div className="space-y-6">
-                  {task.questions.map((q, idx) => (
-                    <div key={q.id} className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-3">
-                      <label className="block text-sm font-semibold text-white">
-                        <span className="text-emerald-400 font-mono mr-1">{idx + 1}.</span>
-                        {q.questionText}
-                        {q.isRequired && <span className="text-red-400 ml-1">*</span>}
-                      </label>
+                  {task.questions.map((q, idx) => {
+                    const qTitle = q.questionText || q.question || `Question ${idx + 1}`;
+                    const qType = q.questionType || q.type || 'TEXT';
 
-                      {/* Question Inputs */}
-                      {q.questionType === 'MULTIPLE_CHOICE' && q.options && (
-                        <div className="space-y-2">
-                          {q.options.map((opt, optIdx) => (
-                            <label
-                              key={optIdx}
-                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                answers[q.id] === opt
-                                  ? 'bg-emerald-500/10 border-emerald-500/50 text-white'
-                                  : 'bg-zinc-950/50 border-zinc-800 text-muted hover:border-zinc-700'
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name={`q_${q.id}`}
-                                value={opt}
-                                checked={answers[q.id] === opt}
-                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                                className="accent-emerald-500"
-                              />
-                              <span className="text-sm">{opt}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
+                    return (
+                      <div key={q.id} className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-3">
+                        <label className="block text-sm font-semibold text-white">
+                          <span className="text-emerald-400 font-mono mr-1">{idx + 1}.</span>
+                          {qTitle}
+                          {q.isRequired && <span className="text-red-400 ml-1">*</span>}
+                        </label>
 
-                      {q.questionType === 'TEXT' && (
-                        <textarea
-                          rows={3}
-                          value={answers[q.id] || ''}
-                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                          placeholder="Type your detailed response here..."
-                          className="input w-full"
-                          required={q.isRequired}
-                        />
-                      )}
+                        {/* Question Inputs */}
+                        {(qType === 'MULTIPLE_CHOICE' || qType === 'SINGLE_CHOICE' || qType === 'DROPDOWN') && q.options && (
+                          <div className="space-y-2">
+                            {q.options.map((rawOpt: any, optIdx: number) => {
+                              const opt = typeof rawOpt === 'string' ? rawOpt : (rawOpt?.text || String(rawOpt));
+                              return (
+                                <label
+                                  key={optIdx}
+                                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                    answers[q.id] === opt
+                                      ? 'bg-emerald-500/10 border-emerald-500/50 text-white'
+                                      : 'bg-zinc-950/50 border-zinc-800 text-muted hover:border-zinc-700'
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`q_${q.id}`}
+                                    value={opt}
+                                    checked={answers[q.id] === opt}
+                                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                    className="accent-emerald-500"
+                                  />
+                                  <span className="text-sm">{opt}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
 
-                      {q.questionType === 'RATING' && (
-                        <div className="flex items-center gap-2 pt-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              type="button"
-                              key={star}
-                              onClick={() => handleAnswerChange(q.id, star)}
-                              className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
-                                answers[q.id] === star
-                                  ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 scale-105'
-                                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                              }`}
-                            >
-                              {star}
-                            </button>
-                          ))}
-                          <span className="text-xs text-muted ml-2">
-                            {answers[q.id] ? `${answers[q.id]} out of 5 stars` : 'Select rating'}
-                          </span>
-                        </div>
-                      )}
+                        {(qType === 'TEXT' || qType === 'SHORT_TEXT' || qType === 'LONG_TEXT') && (
+                          <textarea
+                            rows={3}
+                            value={answers[q.id] || ''}
+                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                            placeholder="Type your detailed response here..."
+                            className="input w-full"
+                            required={q.isRequired}
+                          />
+                        )}
 
-                      {q.questionType === 'BOOLEAN' && (
-                        <div className="flex items-center gap-4">
-                          {['Yes', 'No'].map((val) => (
-                            <button
-                              type="button"
-                              key={val}
-                              onClick={() => handleAnswerChange(q.id, val)}
-                              className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
-                                answers[q.id] === val
-                                  ? 'bg-emerald-500 text-zinc-950 font-bold'
-                                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        {qType === 'RATING' && (
+                          <div className="flex items-center gap-2 pt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                type="button"
+                                key={star}
+                                onClick={() => handleAnswerChange(q.id, star)}
+                                className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
+                                  answers[q.id] === star
+                                    ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 scale-105'
+                                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                                }`}
+                              >
+                                {star}
+                              </button>
+                            ))}
+                            <span className="text-xs text-muted ml-2">
+                              {answers[q.id] ? `${answers[q.id]} out of 5 stars` : 'Select rating'}
+                            </span>
+                          </div>
+                        )}
+
+                        {(qType === 'BOOLEAN' || qType === 'YES_NO') && (
+                          <div className="flex items-center gap-4">
+                            {['Yes', 'No'].map((val) => (
+                              <button
+                                type="button"
+                                key={val}
+                                onClick={() => handleAnswerChange(q.id, val)}
+                                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
+                                  answers[q.id] === val
+                                    ? 'bg-emerald-500 text-zinc-950 font-bold'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                                }`}
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 /* Fallback General Work Input (Prompt engineering, data annotation, screenshot proof) */

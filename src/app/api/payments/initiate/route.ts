@@ -38,12 +38,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Plan specification is required.' }, { status: 400 });
     }
 
-    // Find plan by id or slug
+    // Find plan by id or slug safely without invalid enum crash
+    const rawSlug = targetPlanIdentifier.toUpperCase();
+    const validSlugs = ['FREE', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'];
+    const normalizedSlug = rawSlug === 'VIP' ? 'BUSINESS' : validSlugs.includes(rawSlug) ? rawSlug : null;
+
     let plan = await prisma.plan.findFirst({
       where: {
         OR: [
           { id: targetPlanIdentifier },
-          { slug: targetPlanIdentifier.toUpperCase() as any },
+          ...(normalizedSlug ? [{ slug: normalizedSlug as any }] : []),
         ],
       },
     });

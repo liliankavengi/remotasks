@@ -87,6 +87,14 @@ export async function POST(request: NextRequest) {
               type: q.questionType,
               isRequired: q.isRequired,
               sortOrder: idx + 1,
+              ...(q.options && q.options.length > 0 ? {
+                options: {
+                  create: q.options.map((optText, optIdx) => ({
+                    text: optText,
+                    sortOrder: optIdx,
+                  })),
+                },
+              } : {}),
             })),
           },
         },
@@ -112,6 +120,14 @@ export async function POST(request: NextRequest) {
                 type: q.questionType,
                 isRequired: q.isRequired,
                 sortOrder: idx + 1,
+                ...(q.options && q.options.length > 0 ? {
+                  options: {
+                    create: q.options.map((optText, optIdx) => ({
+                      text: optText,
+                      sortOrder: optIdx,
+                    })),
+                  },
+                } : {}),
               })),
             },
           },

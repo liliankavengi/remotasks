@@ -225,7 +225,7 @@ async function main() {
       slug: 'consumer-preferences-survey-demo',
       categoryId: surveyCat.id,
       creatorId: admin.id,
-      description: 'Share your opinions on everyday consumer products. Quick and easy to complete.',
+      description: 'Share your opinions on everyday consumer products and online shopping in Kenya. Quick and easy to complete.',
       instructions: 'Answer all questions honestly based on your personal experience. This survey takes approximately 8 minutes to complete.',
       reward: 80,
       estimatedMinutes: 8,
@@ -236,6 +236,32 @@ async function main() {
       tags: 'survey, consumer, beginner',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'SINGLE_CHOICE' as const,
+          question: 'How frequently do you make online purchases using your mobile phone or laptop?',
+          options: ['Daily', '2-3 times per week', 'Once a month', 'Rarely or never'],
+          isRequired: true,
+        },
+        {
+          type: 'RATING' as const,
+          question: 'Rate your overall satisfaction with mobile money (M-Pesa / Airtel Money) checkout speeds in Kenyan web apps (1-5 stars):',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'YES_NO' as const,
+          question: 'Have you ever abandoned an online shopping cart due to delayed payment prompts or OTP SMS?',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'LONG_TEXT' as const,
+          question: 'What is the single most important improvement online shopping platforms should make to improve your experience?',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
     {
       title: 'Improve This Customer Support Prompt',
@@ -253,6 +279,37 @@ async function main() {
       tags: 'AI, prompt, writing',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'LONG_TEXT' as const,
+          question: "Original prompt: 'Help the customer with their order problem.' Rewrite this into an effective, role-defined AI system prompt with instructions on empathetic tone, required customer verification questions (Order ID & Email), and polite escalation policies:",
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'SINGLE_CHOICE' as const,
+          question: 'Which primary safety guardrail or constraint did you emphasize most in your rewritten prompt?',
+          options: [
+            'Strict verification before sharing order details',
+            'Customer sentiment escalation to human manager',
+            'Clear refund policy boundaries',
+            'Profanity and abuse handling filters',
+          ],
+          isRequired: true,
+        },
+        {
+          type: 'RATING' as const,
+          question: 'Rate the expected accuracy and structure improvement of your new prompt (1-5 stars):',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'YES_NO' as const,
+          question: 'Does your improved prompt provide a concrete few-shot example for the AI model?',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
     {
       title: 'Evaluate AI-Generated Product Descriptions',
@@ -270,6 +327,37 @@ async function main() {
       tags: 'AI, evaluation, writing',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'RATING' as const,
+          question: "Model A Output: 'Ultra-fast wireless noise-canceling headphones featuring 40-hour playtime, quick USB-C charging, and Bluetooth 5.3 connectivity.' Rate Model A on technical clarity (1-5):",
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'RATING' as const,
+          question: "Model B Output: 'Lose yourself in crystal-clear studio acoustics wherever your journey takes you. Designed for all-day comfort and deep, punchy bass.' Rate Model B on persuasive appeal (1-5):",
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'SINGLE_CHOICE' as const,
+          question: 'Which AI model output is more effective for high-conversion e-commerce listings?',
+          options: [
+            'Model A (Direct, spec-focused, high clarity)',
+            'Model B (Lifestyle, emotional, aspirational)',
+            'Equal blend of both',
+            'Neither - requires further prompt refinement',
+          ],
+          isRequired: true,
+        },
+        {
+          type: 'LONG_TEXT' as const,
+          question: 'Provide brief evaluation notes explaining what prompt adjustments would produce an optimal hybrid response:',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
     {
       title: 'Image Scene Classification',
@@ -287,6 +375,31 @@ async function main() {
       tags: 'image, classification, beginner',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'SINGLE_CHOICE' as const,
+          question: 'Scene: Sun setting over the Great Rift Valley with acacia trees in the foreground. Classify the scene environment:',
+          options: [
+            'African Savannah / Wilderness',
+            'Urban Cityscape',
+            'Coastal / Ocean Beach',
+            'Dense Alpine Forest',
+          ],
+          isRequired: true,
+        },
+        {
+          type: 'YES_NO' as const,
+          question: 'Is the lighting condition in the scene categorized as Golden Hour / Sunset?',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'RATING' as const,
+          question: 'Rate the visual clarity and composition of this image capture (1-5):',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
     {
       title: 'Classify Customer Review Sentiment',
@@ -304,6 +417,26 @@ async function main() {
       tags: 'text, sentiment, classification, beginner',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'SINGLE_CHOICE' as const,
+          question: "Customer Review: 'The delivery was two days later than promised, but the packaging was immaculate and the product quality exceeded my expectations.' Classify the overall sentiment:",
+          options: ['Positive', 'Neutral / Mixed', 'Negative'],
+          isRequired: true,
+        },
+        {
+          type: 'SHORT_TEXT' as const,
+          question: "Identify and quote the positive sentiment phrases from the customer's text:",
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'YES_NO' as const,
+          question: 'Is customer churn risk indicated in this review?',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
     {
       title: 'Research: Top 5 Business Permit Requirements in Nairobi',
@@ -321,15 +454,66 @@ async function main() {
       tags: 'research, Kenya, business',
       isDemo: true,
       publishedAt: new Date(),
+      questions: [
+        {
+          type: 'SHORT_TEXT' as const,
+          question: 'List the Unified Business Permit (UBP) official issuing portal or authority for Nairobi City County:',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'YES_NO' as const,
+          question: 'Is a valid Food & Hygiene license required if the small business handles prepared food?',
+          options: [],
+          isRequired: true,
+        },
+        {
+          type: 'LONG_TEXT' as const,
+          question: 'Paste the official source URL and key compliance notes for starting an SME in Nairobi:',
+          options: [],
+          isRequired: true,
+        },
+      ],
     },
   ];
 
   for (const task of demoTasks) {
-    await prisma.task.upsert({
+    const { questions, ...taskData } = task;
+    const createdTask = await prisma.task.upsert({
       where: { slug: task.slug },
-      update: {},
-      create: task,
+      update: {
+        description: taskData.description,
+        instructions: taskData.instructions,
+        reward: taskData.reward,
+        requiredPlan: taskData.requiredPlan,
+      },
+      create: taskData,
     });
+
+    if (questions && questions.length > 0) {
+      // Clear old questions if needed and insert fresh
+      await prisma.taskQuestion.deleteMany({ where: { taskId: createdTask.id } });
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        await prisma.taskQuestion.create({
+          data: {
+            taskId: createdTask.id,
+            type: q.type,
+            question: q.question,
+            isRequired: q.isRequired,
+            sortOrder: i + 1,
+            ...(q.options && q.options.length > 0 ? {
+              options: {
+                create: q.options.map((optText, oIdx) => ({
+                  text: optText,
+                  sortOrder: oIdx,
+                })),
+              },
+            } : {}),
+          },
+        });
+      }
+    }
   }
 
   // ── Site Settings ─────────────────────────────────────────────────────────

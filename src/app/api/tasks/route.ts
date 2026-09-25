@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
     if (difficulty) where.difficulty = difficulty;
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { tags: { has: search } },
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { tags: { contains: search } },
       ];
     }
     if (minReward) where.reward = { ...where.reward, gte: parseFloat(minReward) };
@@ -77,18 +77,19 @@ export async function GET(request: NextRequest) {
 }
 
 const CreateTaskSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters'),
+  title: z.string().min(3, 'Title must be at least 3 characters'),
   categoryId: z.string(),
-  description: z.string().min(20, 'Description must be at least 20 characters'),
-  instructions: z.string().min(20),
-  reward: z.number().positive(),
-  estimatedMinutes: z.number().positive(),
-  difficulty: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT']),
-  totalSlots: z.number().positive(),
-  requiredPlan: z.enum(['FREE', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE']),
+  description: z.string().min(5, 'Description must be at least 5 characters'),
+  instructions: z.string().optional(),
+  reward: z.number().positive().optional(),
+  rewardAmount: z.number().positive().optional(),
+  estimatedMinutes: z.number().positive().optional().default(10),
+  difficulty: z.string().optional().default('BEGINNER'),
+  totalSlots: z.number().positive().optional().default(50),
+  requiredPlan: z.string().optional().default('FREE'),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+  tags: z.union([z.array(z.string()), z.string()]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -133,6 +134,21 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // Normalize difficulty & plan
+    let diff = (data.difficulty || 'BEGINNER').toUpperCase();
+    if (diff === 'MEDIUM') diff = 'INTERMEDIATE';
+    if (!['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].includes(diff)) {
+      diff = 'BEGINNER';
+    }
+
+    let plan = (data.requiredPlan || 'FREE').toUpperCase();
+    if (plan === 'VIP') plan = 'BUSINESS';
+    if (!['FREE', 'STARTER', 'PRO', 'BUSINESS', 'ENTERPRISE'].includes(plan)) {
+      plan = 'FREE';
+    }
+
+    const finalReward = data.reward ?? data.rewardAmount ?? 50;
+
     // Create slug from title
     const baseSlug = data.title
       .toLowerCase()
@@ -149,12 +165,12 @@ export async function POST(request: NextRequest) {
         categoryId: data.categoryId,
         creatorId: user.id,
         description: data.description,
-        instructions: data.instructions,
-        reward: data.reward,
-        estimatedMinutes: data.estimatedMinutes,
-        difficulty: data.difficulty,
-        totalSlots: data.totalSlots,
-        requiredPlan: data.requiredPlan,
+        instructions: data.instructions || data.description,
+        reward: finalReward,
+        estimatedMinutes: data.estimatedMinutes || 10,
+        difficulty: diff as any,
+        totalSlots: data.totalSlots || 50,
+        requiredPlan: plan as any,
         status: isAdminUser ? 'PUBLISHED' : 'PENDING_REVIEW',
         startDate: data.startDate ? new Date(data.startDate) : null,
         endDate: data.endDate ? new Date(data.endDate) : null,

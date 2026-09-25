@@ -22,6 +22,11 @@ export async function GET(
         category: true,
         questions: {
           orderBy: { sortOrder: 'asc' },
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
         },
         creator: {
           select: { name: true, avatar: true },
@@ -51,10 +56,23 @@ export async function GET(
       },
     });
 
+    const formattedQuestions = task.questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      questionText: q.question,
+      type: q.type,
+      questionType: q.type,
+      isRequired: q.isRequired,
+      stepOrder: q.sortOrder,
+      sortOrder: q.sortOrder,
+      options: q.options?.map((o) => o.text) || [],
+    }));
+
     return NextResponse.json({
       task: {
         ...task,
         rewardAmount: task.reward,
+        questions: formattedQuestions,
       },
       userSubmission: existingSubmission
         ? {
