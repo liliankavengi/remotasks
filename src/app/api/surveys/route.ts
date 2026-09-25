@@ -66,6 +66,32 @@ export async function POST(request: NextRequest) {
 
     const { title, description, rewardAmount, totalSlots, targetAudience, questions } = parsed.data;
 
+    // Server-side confirmed membership verification
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!dbUser) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+
+    const isAdmin = dbUser.role === 'ADMIN' || dbUser.role === 'SUPER_ADMIN';
+    const sub = dbUser.subscriptions[0];
+    const surveyCreateLimit = sub?.surveyCreateLimit ?? 0;
+
+    if (!isAdmin && surveyCreateLimit <= 0) {
+      return NextResponse.json({
+        error: 'Your current membership tier does not permit survey creation. Please upgrade your plan to unlock this functionality.',
+        requiresUpgrade: true,
+      }, { status: 403 });
+    }
+
     let category = await prisma.taskCategory.findFirst({
       where: { slug: 'surveys-research' },
     });

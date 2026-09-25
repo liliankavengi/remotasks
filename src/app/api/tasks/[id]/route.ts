@@ -1,7 +1,7 @@
-// src/app/api/tasks/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { canAccessTask } from '@/lib/permissions';
 
 export async function GET(
   request: NextRequest,
@@ -36,6 +36,28 @@ export async function GET(
 
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Verify user membership tier before allowing access
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    const userPlan = (dbUser?.subscriptions[0]?.plan?.slug || 'FREE') as any;
+    if (!canAccessTask(userPlan, task.requiredPlan as any)) {
+      return NextResponse.json({
+        error: `This task requires confirmed ${task.requiredPlan} plan access. Please upgrade to unlock.`,
+        requiresUpgrade: true,
+        requiredPlan: task.requiredPlan,
+      }, { status: 403 });
     }
 
     // Check if current user already submitted

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { payHero, PayHeroWebhookPayload } from '@/lib/payhero';
+import { confirmAndActivatePayment } from '@/lib/subscriptions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,63 +44,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (status === 'SUCCESS') {
-      // Process successful payment
-      await prisma.$transaction(async (tx: any) => {
-        // Mark payment as completed
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: 'COMPLETED',
-            verifiedAt: new Date(),
-            providerTransactionId: MpesaReceiptNumber || payload.CheckoutRequestID,
-            webhookPayload: body as any,
-          },
-        });
-
-        // Upgrade user's subscription if plan exists
-        if (payment.plan) {
-          // Deactivate existing active subscriptions
-          await tx.subscription.updateMany({
-            where: { userId: payment.userId, status: 'ACTIVE' },
-            data: { status: 'CANCELLED' },
-          });
-
-          // Get plan limits based on slug
-          const planLimits = getPlanLimits(payment.plan.slug as any);
-
-          // Create new subscription
-          await tx.subscription.create({
-            data: {
-              userId: payment.userId,
-              planId: payment.planId!,
-              status: 'ACTIVE',
-              startDate: new Date(),
-              endDate: getSubscriptionEndDate(payment.plan.billingPeriod as any),
-              ...planLimits,
-            },
-          });
-        }
-
-        // Create notification
-        await tx.notification.create({
-          data: {
-            userId: payment.userId,
-            type: 'PAYMENT_SUCCESS',
-            title: 'Payment Successful',
-            message: `Your payment of KES ${amount} was confirmed. ${payment.plan ? `Your ${payment.plan.name} plan is now active!` : ''}`,
-          },
-        });
-
-        // Audit log
-        await tx.auditLog.create({
-          data: {
-            actorId: payment.userId,
-            action: 'PAYMENT_CONFIRMED',
-            resource: 'payment',
-            resourceId: payment.id,
-            metadata: { amount, mpesaRef: MpesaReceiptNumber, plan: payment.plan?.name },
-          },
-        });
+      // Process successful payment atomically
+      await confirmAndActivatePayment({
+        paymentId: payment.id,
+        providerTransactionId: MpesaReceiptNumber || payload.CheckoutRequestID,
+        webhookPayload: body,
       });
 
       console.log('[Webhook] Payment confirmed successfully:', payment.id);
@@ -142,24 +91,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getPlanLimits(slug: 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS' | 'ENTERPRISE') {
-  const limits = {
-    FREE:       { dailyTaskLimit: 5,   monthlyTaskLimit: 50,   maxActiveTasks: 3,  surveyCreateLimit: 0, taskCreateLimit: 0  },
-    STARTER:    { dailyTaskLimit: 15,  monthlyTaskLimit: 150,  maxActiveTasks: 10, surveyCreateLimit: 5, taskCreateLimit: 0  },
-    PRO:        { dailyTaskLimit: 50,  monthlyTaskLimit: 500,  maxActiveTasks: 30, surveyCreateLimit: 20, taskCreateLimit: 5 },
-    BUSINESS:   { dailyTaskLimit: 100, monthlyTaskLimit: 1000, maxActiveTasks: 50, surveyCreateLimit: 50, taskCreateLimit: 20 },
-    ENTERPRISE: { dailyTaskLimit: 999, monthlyTaskLimit: 9999, maxActiveTasks: 999, surveyCreateLimit: 999, taskCreateLimit: 999 },
-  };
-  return limits[slug] || limits.FREE;
-}
-
-function getSubscriptionEndDate(billingPeriod: 'MONTHLY' | 'YEARLY' | 'LIFETIME'): Date | null {
-  const now = new Date();
-  if (billingPeriod === 'MONTHLY') {
-    return new Date(now.setMonth(now.getMonth() + 1));
-  }
-  if (billingPeriod === 'YEARLY') {
-    return new Date(now.setFullYear(now.getFullYear() + 1));
-  }
-  return null; // Lifetime
-}

@@ -116,6 +116,78 @@ class PayHeroProvider {
   }
 
   /**
+   * Query the live status of a transaction from PayHero
+   * Endpoint: GET https://backend.payhero.co.ke/api/v2/transaction-status?reference={reference}
+   */
+  async getTransactionStatus(reference: string): Promise<{
+    success: boolean;
+    status?: 'SUCCESS' | 'FAILED' | 'PENDING' | 'CANCELLED';
+    receiptNumber?: string;
+    amount?: number;
+    phone?: string;
+    raw?: any;
+    error?: string;
+  }> {
+    if (!this.isConfigured) {
+      return { success: false, error: 'PayHero is not configured.' };
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/transaction-status?reference=${encodeURIComponent(reference)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: this.getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        return { success: false, error: `PayHero responded with status ${response.status}` };
+      }
+
+      const data = await response.json();
+      console.log('[PayHero] Queried transaction status for reference', reference, ':', JSON.stringify(data));
+
+      // Standardize status format from PayHero response
+      const rawStatus = (
+        data.status ||
+        data.payment_status ||
+        data.transaction_status ||
+        (data.data && (data.data.status || data.data.payment_status)) ||
+        ''
+      ).toString().toUpperCase();
+
+      const receiptNumber =
+        data.MpesaReceiptNumber ||
+        data.mpesa_reference ||
+        data.receipt ||
+        data.checkout_request_id ||
+        (data.data && (data.data.MpesaReceiptNumber || data.data.mpesa_reference));
+
+      let mappedStatus: 'SUCCESS' | 'FAILED' | 'PENDING' | 'CANCELLED' = 'PENDING';
+      if (rawStatus === 'SUCCESS' || rawStatus === 'COMPLETED' || rawStatus === 'PAID') {
+        mappedStatus = 'SUCCESS';
+      } else if (rawStatus === 'FAILED' || rawStatus === 'REJECTED' || rawStatus === 'DECLINED') {
+        mappedStatus = 'FAILED';
+      } else if (rawStatus === 'CANCELLED' || rawStatus === 'CANCELED') {
+        mappedStatus = 'CANCELLED';
+      }
+
+      return {
+        success: true,
+        status: mappedStatus,
+        receiptNumber,
+        amount: data.amount || (data.data && data.data.amount),
+        phone: data.phone_number || (data.data && data.data.phone_number),
+        raw: data,
+      };
+    } catch (error: any) {
+      console.error('[PayHero] Error checking transaction status:', error);
+      return { success: false, error: error.message || 'Failed to query transaction status' };
+    }
+  }
+
+  /**
    * Format phone number to 254XXXXXXXXX
    */
   private formatPhone(phone: string): string {
@@ -152,3 +224,4 @@ class PayHeroProvider {
 }
 
 export const payHero = new PayHeroProvider();
+

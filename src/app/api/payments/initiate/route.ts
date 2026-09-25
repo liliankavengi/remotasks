@@ -78,86 +78,52 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Check if PayHero live integration credentials exist
-    if (payHero.configured) {
-      const result = await payHero.initiatePayment({
-        amount: plan.price,
-        phoneNumber: targetPhone,
-        reference,
-      });
-
-      if (!result.success) {
-        await prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: 'FAILED', metadata: { error: result.error } as any },
-        });
-
-        return NextResponse.json({
-          error: result.error || 'M-Pesa payment initiation failed. Please try again.',
-        }, { status: 400 });
-      }
-
+    // Initiate real M-Pesa STK Push
+    if (!payHero.configured) {
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
-          metadata: result.data as any,
-          providerTransactionId: result.data?.CheckoutRequestID || result.data?.reference,
+          status: 'FAILED',
+          metadata: { error: 'Payment gateway credentials not configured.' } as any,
         },
       });
 
       return NextResponse.json({
-        success: true,
-        reference,
-        paymentId: payment.id,
-        message: 'M-Pesa STK Push prompt sent to your phone. Enter your PIN to complete payment.',
+        error: 'Live M-Pesa gateway credentials not configured. Please set PAYHERO_USERNAME, PAYHERO_PASSWORD, and PAYHERO_CHANNEL_ID in .env to dispatch real STK push prompts.',
+      }, { status: 400 });
+    }
+
+    const result = await payHero.initiatePayment({
+      amount: plan.price,
+      phoneNumber: targetPhone,
+      reference,
+    });
+
+    if (!result.success) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'FAILED', metadata: { error: result.error } as any },
       });
-    } else {
-      // In local dev without live credentials, auto-complete after simulation
-      const slugStr = plan.slug as string;
-      setTimeout(async () => {
-        try {
-          await prisma.$transaction(async (tx: any) => {
-            await tx.payment.update({
-              where: { id: payment.id },
-              data: {
-                status: 'COMPLETED',
-                verifiedAt: new Date(),
-                providerTransactionId: `MPESA-DEMO-${Date.now()}`,
-              },
-            });
-
-            // Upsert active subscription for user
-            await tx.subscription.create({
-              data: {
-                userId: user.id,
-                planId: plan.id,
-                status: 'ACTIVE',
-                dailyTaskLimit: slugStr === 'PRO' ? 30 : slugStr === 'VIP' ? 100 : 999,
-                monthlyTaskLimit: slugStr === 'PRO' ? 500 : slugStr === 'VIP' ? 2000 : 9999,
-              },
-            });
-
-            await tx.notification.create({
-              data: {
-                userId: user.id,
-                type: 'UPGRADE_SUCCESS',
-                title: 'Plan Upgraded Successfully!',
-                message: `Your account is now upgraded to ${plan.name}. High-paying tasks unlocked!`,
-              },
-            });
-          });
-        } catch (e) {
-          console.error('Error simulating demo payment completion:', e);
-        }
-      }, 4000);
 
       return NextResponse.json({
-        success: true,
-        reference,
-        paymentId: payment.id,
-        message: 'Simulated STK Push sent. Please wait while payment confirms...',
-      });
+        error: result.error || 'Failed to dispatch M-Pesa STK push. Please check your phone number and try again.',
+      }, { status: 400 });
     }
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        metadata: result.data as any,
+        providerTransactionId: result.data?.CheckoutRequestID || result.data?.reference,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      reference,
+      paymentId: payment.id,
+      message: 'M-Pesa STK Push prompt sent to your phone. Enter your PIN to complete payment.',
+    });
   } catch (error) {
     console.error('[Payment Initiate] Error:', error);
     return NextResponse.json({ error: 'Payment initiation error. Please try again.' }, { status: 500 });

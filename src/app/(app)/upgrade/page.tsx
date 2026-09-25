@@ -531,10 +531,66 @@ export default function UpgradePage() {
                 Check Your Phone!
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 auto 12px', maxWidth: '340px' }}>
-                An M-Pesa STK prompt has been sent to <strong style={{ color: '#16a34a' }}>{phone}</strong>. Please enter your PIN to authorize payment.
+                A live M-Pesa STK prompt has been sent to <strong style={{ color: '#16a34a' }}>{phone}</strong>. Please enter your M-Pesa PIN to complete payment.
               </p>
-              <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
-                Waiting for payment confirmation... ({pollCount * 3}s)
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', marginBottom: '16px' }}>
+                Waiting for M-Pesa confirmation... ({pollCount * 3}s)
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!paymentRef) return;
+                    try {
+                      const res = await fetch(`/api/payments/status/${paymentRef}`);
+                      const data = await res.json();
+                      if (data.status === 'COMPLETED') {
+                        setPaymentStatus('SUCCESS');
+                      } else if (data.status === 'FAILED') {
+                        setPaymentStatus('FAILED');
+                        setErrorMessage(data.failureReason || 'Payment was declined or timed out.');
+                      }
+                    } catch (e) {
+                      console.error('Error verifying status:', e);
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <RefreshCw size={13} />
+                  <span>I've Entered PIN (Verify)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentStatus('IDLE');
+                    setPaymentRef(null);
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           )}
