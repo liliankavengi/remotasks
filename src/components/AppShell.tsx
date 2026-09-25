@@ -27,10 +27,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const user = session?.user as any;
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
-  // Get initials
-  const initials = user?.name
-    ? user.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
-    : '?';
+  // Get clean user display name and initials
+  const rawName = user?.name && user.name !== 'undefined'
+    ? user.name
+    : user?.email ? user.email.split('@')[0] : 'User';
+  const displayName = rawName.replace(/[._-]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase() || 'U';
 
   const mainNav: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
@@ -110,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-user" onClick={() => setShowUserMenu(!showUserMenu)}>
           <div className="avatar avatar-sm">{initials}</div>
           <div className="sidebar-user-info">
-            <div className="sidebar-user-name">{user?.name || 'User'}</div>
+            <div className="sidebar-user-name">{displayName}</div>
             <div className="sidebar-user-plan">
               <span className="dot"></span>
               {user?.planName || 'Free Plan'}

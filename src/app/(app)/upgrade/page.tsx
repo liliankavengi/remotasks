@@ -41,8 +41,6 @@ export default function UpgradePage() {
   const [paymentRef, setPaymentRef] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Poll timer state
   const [pollCount, setPollCount] = useState(0);
 
   useEffect(() => {
@@ -51,7 +49,6 @@ export default function UpgradePage() {
 
   const fetchPlans = async () => {
     try {
-      // Hardcoded high-value plans matching Prisma seed
       const defaultPlans: Plan[] = [
         {
           id: 'free',
@@ -62,7 +59,7 @@ export default function UpgradePage() {
           maxDailyTasks: 3,
           maxMonthlyTasks: 30,
           earningMultiplier: 1.0,
-          features: ['Basic Survey Tasks', 'Standard Payout Speed', 'Public Support Forum'],
+          features: ['Basic Survey Tasks', 'Standard Payout Speed', 'Public Community Support'],
         },
         {
           id: 'starter',
@@ -84,7 +81,7 @@ export default function UpgradePage() {
           maxDailyTasks: 30,
           maxMonthlyTasks: 500,
           earningMultiplier: 1.5,
-          features: ['Prompt Engineering & RLHF Tasks', 'Same-Day M-Pesa Payouts', 'Dedicated Support', '1.5x Earning Rate'],
+          features: ['Prompt Engineering Tasks', 'Same-Day M-Pesa Payouts', 'Dedicated Support', '1.5x Earning Rate'],
         },
         {
           id: 'vip',
@@ -95,7 +92,7 @@ export default function UpgradePage() {
           maxDailyTasks: 100,
           maxMonthlyTasks: 2000,
           earningMultiplier: 2.0,
-          features: ['All Premium AI & LLM Tasks', 'Instant M-Pesa Payouts', 'Survey Creator Tool Access', '2.0x Earning Multiplier'],
+          features: ['All Premium AI & LLM Tasks', 'Instant M-Pesa Payouts', 'Survey Creator Access', '2.0x Earning Multiplier'],
         },
         {
           id: 'enterprise',
@@ -196,23 +193,47 @@ export default function UpgradePage() {
   const currentSelectedPlan = plans.find((p) => p.slug === selectedPlanSlug);
 
   return (
-    <div className="container py-10 max-w-6xl">
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '32px 20px 60px' }}>
       {/* Page Header */}
-      <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-        <div className="badge badge-primary inline-flex items-center gap-1.5 px-3 py-1">
-          <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-          Unlock High-Paying AI & Survey Tasks
+      <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#dcfce7',
+            color: '#15803d',
+            padding: '4px 12px',
+            borderRadius: '9999px',
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            marginBottom: '12px',
+          }}
+        >
+          <Zap size={14} color="#16a34a" />
+          <span>Membership Tiers</span>
         </div>
-        <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight">
+        <h1
+          style={{
+            fontSize: '28px',
+            fontWeight: 800,
+            color: '#0f172a',
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
+            margin: '0 0 10px',
+          }}
+        >
           Choose Your Work Membership Plan
         </h1>
-        <p className="text-muted text-sm leading-relaxed">
-          Upgrade your account tier to increase your daily task limit, unlock lucrative AI evaluation categories, and get up to <span className="text-emerald-400 font-bold">2.5x higher pay</span> per task.
+        <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+          Upgrade your account tier to increase your daily task limit, unlock lucrative AI evaluation categories, and get up to{' '}
+          <strong style={{ color: '#16a34a' }}>2.5x higher pay</strong> per task.
         </p>
       </div>
 
-      {/* Plans Selection Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+      {/* Minimalistic Flashcards Grid */}
+      <div className="flashcard-grid">
         {plans.map((plan) => {
           const isSelected = selectedPlanSlug === plan.slug;
           const isPopular = plan.slug === 'PRO';
@@ -221,112 +242,235 @@ export default function UpgradePage() {
             <div
               key={plan.id}
               onClick={() => setSelectedPlanSlug(plan.slug)}
-              className={`card p-5 cursor-pointer relative transition-all duration-200 flex flex-col justify-between ${
-                isSelected
-                  ? 'border-2 border-emerald-500 bg-emerald-950/20 shadow-xl shadow-emerald-500/10 scale-[1.02]'
-                  : 'hover:border-zinc-700'
-              }`}
+              className={`flashcard ${isSelected ? 'selected' : ''}`}
             >
+              {/* Optional Most Popular Ribbon */}
               {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-zinc-950 font-extrabold text-[10px] uppercase px-2.5 py-0.5 rounded-full tracking-wider">
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-11px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '3px 10px',
+                    borderRadius: '9999px',
+                    boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
+                    whiteSpace: 'nowrap',
+                    zIndex: 2,
+                  }}
+                >
                   Most Popular
                 </div>
               )}
 
+              {/* Card Top / Title */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-white text-base">{plan.name}</h3>
-                  {isSelected && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                </div>
-
-                <div className="my-3">
-                  <span className="text-2xl font-extrabold text-white">
-                    KES {plan.priceKes.toLocaleString()}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>
+                    {plan.name}
                   </span>
-                  <span className="text-xs text-muted block font-mono">
-                    (${plan.priceUsd} USD) / month
-                  </span>
-                </div>
-
-                <div className="text-xs bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800 space-y-1 my-3">
-                  <div className="flex justify-between text-zinc-300">
-                    <span>Daily Tasks:</span>
-                    <span className="font-bold text-white">{plan.maxDailyTasks}</span>
-                  </div>
-                  <div className="flex justify-between text-zinc-300">
-                    <span>Earning Rate:</span>
-                    <span className="font-bold text-emerald-400">{plan.earningMultiplier}x</span>
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      border: isSelected ? 'none' : '1.5px solid #cbd5e1',
+                      backgroundColor: isSelected ? '#16a34a' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {isSelected && <Check size={12} strokeWidth={3} />}
                   </div>
                 </div>
 
-                <ul className="space-y-2 text-xs text-muted mb-4">
+                {/* Price Display */}
+                <div style={{ margin: '14px 0 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                    <span style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                      KES {plan.priceKes.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>/ mo</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', fontFamily: 'monospace' }}>
+                    (${plan.priceUsd} USD)
+                  </div>
+                </div>
+
+                {/* Compact Flashcard Spec Box */}
+                <div
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #f1f5f9',
+                    borderRadius: '10px',
+                    padding: '10px 12px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                    <span style={{ color: '#64748b' }}>Daily tasks:</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                      {plan.maxDailyTasks > 500 ? 'Unlimited' : `${plan.maxDailyTasks} / day`}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                    <span style={{ color: '#64748b' }}>Earnings:</span>
+                    <span style={{ fontWeight: 800, color: '#16a34a' }}>{plan.earningMultiplier}x rate</span>
+                  </div>
+                </div>
+
+                {/* Bullet Features */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                   {plan.features.map((feat, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </li>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: '#334155' }}>
+                      <Check size={14} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <span style={{ lineHeight: 1.4 }}>{feat}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
 
+              {/* Minimalist Selection Button */}
               <button
                 type="button"
-                className={`btn w-full text-xs py-2 ${
-                  isSelected ? 'btn-primary' : 'btn-secondary'
-                }`}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: isSelected ? 'none' : '1px solid #e2e8f0',
+                  backgroundColor: isSelected ? '#16a34a' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isSelected ? '0 4px 10px rgba(22, 163, 74, 0.25)' : 'none',
+                }}
               >
-                {isSelected ? 'Selected Plan' : 'Select Plan'}
+                {isSelected ? (
+                  <>
+                    <CheckCircle2 size={15} />
+                    <span>Selected Plan</span>
+                  </>
+                ) : (
+                  <span>Select Plan</span>
+                )}
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* M-Pesa Payment Card */}
+      {/* Minimalist M-Pesa Checkout Card */}
       {currentSelectedPlan && currentSelectedPlan.priceKes > 0 && (
-        <div className="max-w-xl mx-auto card p-8 border-emerald-500/30 bg-gradient-to-b from-emerald-950/20 to-card shadow-2xl">
-          <div className="flex items-center gap-3 pb-6 border-b border-border mb-6">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Smartphone className="w-6 h-6" />
+        <div
+          style={{
+            maxWidth: '480px',
+            margin: '0 auto',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '16px',
+            padding: '28px 24px',
+            boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '18px', borderBottom: '1px solid #f1f5f9', marginBottom: '20px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: '#dcfce7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#16a34a',
+                flexShrink: 0,
+              }}
+            >
+              <Smartphone size={22} />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-                Instant M-Pesa STK Push Payment
+              <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: '0 0 3px' }}>
+                Instant M-Pesa STK Push
               </h2>
-              <p className="text-xs text-muted">
-                Upgrading to <span className="text-emerald-400 font-bold">{currentSelectedPlan.name}</span> for{' '}
-                <span className="text-white font-bold">KES {currentSelectedPlan.priceKes.toLocaleString()}</span>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                Upgrading to <strong style={{ color: '#16a34a' }}>{currentSelectedPlan.name}</strong> for{' '}
+                <strong style={{ color: '#0f172a' }}>KES {currentSelectedPlan.priceKes.toLocaleString()}</strong>
               </p>
             </div>
           </div>
 
-          {/* Form / Payment Controls */}
+          {/* Status: IDLE Form */}
           {paymentStatus === 'IDLE' && (
-            <form onSubmit={handleInitiateSTK} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-white mb-2">
-                  M-Pesa Phone Number <span className="text-red-400">*</span>
+            <form onSubmit={handleInitiateSTK}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '6px' }}>
+                  M-Pesa Phone Number <span style={{ color: '#dc2626' }}>*</span>
                 </label>
-                <div className="relative">
+                <div style={{ position: 'relative' }}>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g. 0712345678 or 254712345678"
-                    className="input w-full pl-10 font-mono text-sm"
                     required
+                    style={{
+                      width: '100%',
+                      padding: '11px 14px 11px 38px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: '#0f172a',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#16a34a'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
                   />
-                  <Smartphone className="w-4 h-4 text-muted absolute left-3 top-3.5" />
+                  <Smartphone size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '14px' }} />
                 </div>
-                <p className="text-xs text-muted mt-1.5 flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                  Secured by PayHero STK Push API integration.
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748b', marginTop: '6px' }}>
+                  <Shield size={12} color="#16a34a" />
+                  <span>Secured by PayHero STK Push API integration.</span>
+                </div>
               </div>
 
               {errorMessage && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <AlertCircle size={16} />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -334,83 +478,213 @@ export default function UpgradePage() {
               <button
                 type="submit"
                 disabled={isInitiating}
-                className="btn btn-primary w-full py-3 text-sm font-bold shadow-lg shadow-emerald-500/20"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  backgroundColor: '#16a34a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  cursor: isInitiating ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { if (!isInitiating) e.currentTarget.style.backgroundColor = '#15803d'; }}
+                onMouseLeave={(e) => { if (!isInitiating) e.currentTarget.style.backgroundColor = '#16a34a'; }}
               >
                 {isInitiating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Connecting to M-Pesa...
-                  </span>
+                  <>
+                    <RefreshCw size={16} className="spin-icon" />
+                    <span>Connecting to M-Pesa...</span>
+                  </>
                 ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    Pay KES {currentSelectedPlan.priceKes.toLocaleString()} via M-Pesa
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
+                  <>
+                    <span>Pay KES {currentSelectedPlan.priceKes.toLocaleString()} via M-Pesa</span>
+                    <ArrowRight size={16} />
+                  </>
                 )}
               </button>
             </form>
           )}
 
-          {/* STK Push Pending Modal/Overlay */}
+          {/* Status: PENDING */}
           {paymentStatus === 'PENDING' && (
-            <div className="text-center py-6 space-y-4 animate-in fade-in">
-              <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                <Smartphone className="w-8 h-8 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-extrabold text-white">Check Your Phone!</h3>
-              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
-                An M-Pesa STK prompt has been sent to <span className="text-emerald-400 font-mono font-bold">{phone}</span>. Please enter your M-Pesa PIN to complete payment.
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '54px',
+                  height: '54px',
+                  margin: '0 auto 16px',
+                  borderRadius: '50%',
+                  border: '3px solid #dcfce7',
+                  borderTopColor: '#16a34a',
+                  animation: 'spin 0.9s linear infinite',
+                }}
+              />
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+                Check Your Phone!
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 auto 12px', maxWidth: '340px' }}>
+                An M-Pesa STK prompt has been sent to <strong style={{ color: '#16a34a' }}>{phone}</strong>. Please enter your PIN to authorize payment.
               </p>
-              <div className="text-xs text-zinc-500 font-mono">
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>
                 Waiting for payment confirmation... ({pollCount * 3}s)
               </div>
             </div>
           )}
 
-          {/* Payment Success View */}
+          {/* Status: SUCCESS */}
           {paymentStatus === 'SUCCESS' && (
-            <div className="text-center py-6 space-y-4 animate-in zoom-in-95">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-10 h-10" />
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '54px',
+                  height: '54px',
+                  margin: '0 auto 14px',
+                  borderRadius: '50%',
+                  backgroundColor: '#dcfce7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#16a34a',
+                }}
+              >
+                <CheckCircle2 size={32} />
               </div>
-              <h3 className="text-2xl font-black text-white">Payment Received!</h3>
-              <p className="text-sm text-muted">
-                Your account has been instantly upgraded to <span className="text-emerald-400 font-bold">{currentSelectedPlan.name}</span>.
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+                Payment Received!
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px' }}>
+                Your account has been instantly upgraded to <strong style={{ color: '#16a34a' }}>{currentSelectedPlan.name}</strong>.
               </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="btn btn-primary px-8"
-                >
-                  Go to Dashboard & Start Tasks
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                style={{
+                  padding: '11px 24px',
+                  backgroundColor: '#16a34a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Go to Dashboard
+              </button>
             </div>
           )}
 
-          {/* Payment Failed View */}
+          {/* Status: FAILED */}
           {paymentStatus === 'FAILED' && (
-            <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500 text-red-400 flex items-center justify-center mx-auto">
-                <XCircle className="w-10 h-10" />
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div
+                style={{
+                  width: '54px',
+                  height: '54px',
+                  margin: '0 auto 14px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fee2e2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#dc2626',
+                }}
+              >
+                <XCircle size={32} />
               </div>
-              <h3 className="text-xl font-bold text-white">Payment Failed or Cancelled</h3>
-              <p className="text-xs text-muted max-w-sm mx-auto">
-                {errorMessage || 'The transaction could not be completed.'}
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+                Payment Incomplete
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 18px' }}>
+                {errorMessage || 'The payment request was cancelled or timed out.'}
               </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => setPaymentStatus('IDLE')}
-                  className="btn btn-secondary px-6 text-xs"
-                >
-                  Try Again
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setPaymentStatus('IDLE')}
+                style={{
+                  padding: '9px 20px',
+                  backgroundColor: '#f1f5f9',
+                  color: '#334155',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Try Again
+              </button>
             </div>
           )}
         </div>
       )}
+
+      {/* Scoped CSS for Flashcards Grid & Micro-animations */}
+      <style jsx>{`
+        .flashcard-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 16px;
+          margin-bottom: 36px;
+          align-items: stretch;
+        }
+
+        .flashcard {
+          position: relative;
+          background-color: #ffffff;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 22px 18px 18px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        .flashcard:hover {
+          transform: translateY(-4px);
+          border-color: #cbd5e1;
+          box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08);
+        }
+
+        .flashcard.selected {
+          border-color: #16a34a;
+          box-shadow: 0 10px 25px -4px rgba(22, 163, 74, 0.2);
+          background-color: #ffffff;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        :global(.spin-icon) {
+          animation: spin 0.8s linear infinite;
+        }
+
+        @media (max-width: 1100px) {
+          .flashcard-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        @media (max-width: 720px) {
+          .flashcard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }
