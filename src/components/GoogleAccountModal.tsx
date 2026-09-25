@@ -149,9 +149,9 @@ export default function GoogleAccountModal({
         setLoadingEmail(null);
       } else {
         saveAccount(cleanEmail, name);
-        onClose();
-        router.push('/dashboard');
-        router.refresh();
+        const params = new URLSearchParams(window.location.search);
+        const destination = params.get('callbackUrl') || '/dashboard';
+        window.location.href = destination;
       }
     } catch {
       setError('Connection failed. Please check your internet connection.');

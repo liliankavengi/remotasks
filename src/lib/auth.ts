@@ -209,8 +209,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, trigger }) {
-      const targetId = (user?.id || token.id) as string;
-      if (targetId && (user || !token.plan || trigger === 'update')) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.status = (user as any).status;
+        token.plan = (user as any).plan;
+        token.planName = (user as any).planName;
+      }
+
+      const targetId = (token.id || user?.id || token.sub) as string;
+      if (targetId && (!token.plan || trigger === 'update')) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: targetId },
@@ -238,8 +246,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
+      if (token && session.user) {
+        session.user.id = (token.id as string) || (token.sub as string);
         (session.user as any).role = token.role;
         (session.user as any).status = token.status;
         (session.user as any).plan = token.plan;

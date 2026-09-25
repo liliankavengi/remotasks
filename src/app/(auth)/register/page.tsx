@@ -89,10 +89,12 @@ export default function RegisterPage() {
         redirect: false,
       });
 
-      if (result?.ok) {
-        router.push('/dashboard');
+      if (result?.ok || !result?.error) {
+        const params = new URLSearchParams(window.location.search);
+        const destination = params.get('callbackUrl') || '/dashboard';
+        window.location.href = destination;
       } else {
-        router.push('/login?registered=1');
+        window.location.href = '/login?registered=1';
       }
     } catch {
       setError('Something went wrong. Please try again.');

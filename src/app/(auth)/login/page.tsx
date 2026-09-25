@@ -57,8 +57,9 @@ export default function LoginPage() {
           setError('Invalid email or password. Please try again.');
         }
       } else {
-        router.push('/dashboard');
-        router.refresh();
+        const params = new URLSearchParams(window.location.search);
+        const destination = params.get('callbackUrl') || '/dashboard';
+        window.location.href = destination;
       }
     } catch {
       setError('Something went wrong. Please try again.');
